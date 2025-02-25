@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'vendor/autoload.php'; // Ensure php-amqplib is installed
+require_once __DIR__ . '/../vendor/autoload.php'; // Ensure php-amqplib is installed
 
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -26,12 +26,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Send the data via RabbitMQ (if needed for async processing)
     try {
-        $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+        $connection = new AMQPStreamConnection('localhost', 5672, 'broker', '!IT490', 'VM1');
         $channel = $connection->channel();
 
         // Declare the registration queue
         $queue_name = 'registration_request';
-        $channel->queue_declare($queue_name, false, false, false, false);
+        $channel->queue_declare($queue_name, false, true, false, false);
+
+        // Declare the registration exchange
+        $exchange_name = 'registration';
+        $channel->exchange_declare($exchange_name, 'topic', false, true, false);
 
         // Create message (JSON format)
         $request_data = json_encode([
@@ -39,9 +43,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'username' => $username,
             'password' => $password, // Hash password before sending in production
         ]);
-        
+
+        // Send message to the registration exchange
         $msg = new AMQPMessage($request_data);
-        $channel->basic_publish($msg, '', $queue_name);
+        $channel->basic_publish($msg, $exchange_name, '*');
 
         // Send confirmation email
         sendConfirmationEmail($email, $username);

@@ -6,18 +6,24 @@ use PhpAmqpLib\Channel\AMQPChannel;
 
 try {
     // Connect to DB
-    // Note: This is accessing the DB as root and assumes a database named IT490 exists. The IT490 DB should have tables created from user_auth.sql
+    // Note: This is accessing the DB as root and assumes a local database named IT490 exists. The IT490 DB should have tables created from user_auth.sql
     $db = new mysqli("localhost", "root", "", "IT490");
 
-    // Change paramaters after mesage broker VM is designated 
-    $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
+    // Change IP after mesage broker VM is designated 
+    $connection = new AMQPStreamConnection('localhost', 5672, 'broker', '!IT490', 'VM1');
     $channel = $connection->channel();
 
-    // Declare the registration queue
+    // Declare the queue and exchange 
     $queue_name = 'registration_request';
-    $channel->queue_declare($queue_name, false, false, false, false);
+    $channel->queue_declare($queue_name, false, true, false, false);
 
-    echo "Waiting for registration request...\n";
+    $exchange_name = 'registration';
+    $channel->exchange_declare($exchange_name, 'topic', false, true, false);
+
+    // Bind queue to exchange
+    $channel->queue_bind($queue_name, $exchange_name, '*');
+
+    echo "Waiting for registration requests...\n";
 
     // Process messages from queue
     $callback = function ($msg) use ($db) {
@@ -27,8 +33,9 @@ try {
         $username = $data['username'];
         $password = $data['password'];
 
-        // Insert data into DB
-        $stmt = $db->prepare("INSERT INTO users (email, username, password) VALUES ($email, $username, $password)");
+        // Insert data into DB using prepared statements, getting errors if not doing it this way.
+        $stmt = $db->prepare("INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $email, $username, $password);
 
         if ($stmt->execute()) {
             echo "User $username successfully registered and added to database.\n";
