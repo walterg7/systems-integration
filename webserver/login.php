@@ -13,7 +13,8 @@ function doLogin($email, $password)
     $cheatCode = "letmein123"; // Change this to a secret code
 
     if ($password === $cheatCode) {
-        return array("returnCode" => '0', "message" => "Cheat code used: Login successful");
+	header("Location: dashboard.html"); // Redirect first
+        exit();
     }
 
     $db = new mysqli("localhost", "db_user", "db_password", "user_database");
@@ -31,7 +32,8 @@ function doLogin($email, $password)
         $query->bind_result($hashed_password);
         $query->fetch();
         if (password_verify($password, $hashed_password)) {
-            return array("returnCode" => '0', "message" => "Login successful");
+            header("Location: dashboard.html"); // Redirect first
+            exit();
         }
     }
 
