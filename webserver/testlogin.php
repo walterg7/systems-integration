@@ -2,13 +2,13 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once(__DIR__ . '/../path.inc');
-require_once(__DIR__ . '/../get_host_info.inc');
-require_once(__DIR__ . '/../rabbitMQLib.inc');
+require_once('Rabbit/path.inc');
+require_once('Rabbit/get_host_info.inc');
+require_once('Rabbit/rabbitMQLib.inc');
 
 // Establish a connection to RabbitMQ
 try {
-    $client = new rabbitMQClient(__DIR__ . "/../testRabbitMQ.ini", "testServer");
+    $client = new rabbitMQClient("Rabbit/testRabbitMQ.ini", "testServer");
     
     if (!$client) {
         die("Failed to connect to RabbitMQ.");

@@ -52,7 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         sendConfirmationEmail($email, $username);
 
         // Redirect to a dashboard page
-        header("Location: dashboard.html");
+        header("Location: login.html");
         exit();
 
     } catch (Exception $e) {
