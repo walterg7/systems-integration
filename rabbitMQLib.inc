@@ -147,6 +147,8 @@ class rabbitMQClient
 	private $routing_key = '*';
 	private $response_queue = array();
 	private $exchange_type = "topic";
+	private $auto_delete;
+   	private $conn_queue; 
 
 	function __construct($machine, $server = "rabbitMQ")
 	{
@@ -156,6 +158,8 @@ class rabbitMQClient
 		$this->USER     = $this->machine[$server]["USER"];
 		$this->PASSWORD = $this->machine[$server]["PASSWORD"];
 		$this->VHOST = $this->machine[$server]["VHOST"];
+		$this->auto_delete = false;
+        	$this->conn_queue = null;
 		if (isset( $this->machine[$server]["EXCHANGE_TYPE"]))
 		{
 			$this->exchange_type = $this->machine[$server]["EXCHANGE_TYPE"];
@@ -212,7 +216,7 @@ class rabbitMQClient
 
       $callback_queue = new AMQPQueue($channel);
       $callback_queue->setName($this->queue."_response");
-      $callback_queue->declare();
+      $callback_queue->declareQueue();
 			$callback_queue->bind($exchange->getName(),$this->routing_key.".response");
 
 			$this->conn_queue = new AMQPQueue($channel);
