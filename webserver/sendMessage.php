@@ -6,29 +6,39 @@ require_once('/var/www/rabbitmqphp_example/path.inc');
 require_once('/var/www/rabbitmqphp_example/get_host_info.inc');
 require_once('/var/www/rabbitmqphp_example/rabbitMQLib.inc');
 
-$email = $_POST['email'];
-$password = $_POST['password'];
+$email = isset($_POST['email']) ? $_POST['email'] : "";
+$password = isset($_POST['password']) ? $_POST['password'] : "";
 
-// Send the data to recMessage.php via RabbitMQ
+// Prepare request
 $request = array(
     'type' => 'login',
     'email' => $email,
     'password' => $password
 );
 
+// Connect to RabbitMQ
 $client = new rabbitMQClient("/var/www/rabbitmqphp_example/testRabbitMQ.ini", "testServer");
 
-$response = $client->send_request($request);
+// Only send request if email and password are set
+if (!empty($email) && !empty($password)) {
+    $response = $client->send_request($request);
 
-// Debug the response
-var_dump($response);
+    // Debugging: Check what the server responds with
+    error_log("Login Response: " . json_encode($response));
 
-// If the login was successful, redirect to the dashboard
-if ($response['returnCode'] == 0) {
-    header("Location: dashboard.html");
-    exit();
+    if ($response['returnCode'] == 0) {
+        // Success: Redirect to dashboard.html
+        header("Location: dashboard.html");
+        exit();
+    } else {
+        // Failure: Redirect back to index.html with an error
+        header("Location: index.html?error=" . urlencode($response['message']));
+        exit();
+    }
 } else {
-    echo "Login failed: " . $response['message'];
+    // Missing email/password, redirect back with an error
+    header("Location: index.html?error=" . urlencode("Email and password are required."));
+    exit();
 }
 ?>
 
