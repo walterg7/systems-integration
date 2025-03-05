@@ -25,7 +25,25 @@
 	<form action="register.html">
     		<input type="submit" value="New Account" />
 	</form>
+
     </div>
+    <script>
+    window.onload = function() {
+        // Check if there's a success or error message in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const successMessage = urlParams.get('success');
+        const errorMessage = urlParams.get('error');
+
+        if (successMessage) {
+            alert(successMessage);  // Show success message
+        }
+
+        if (errorMessage) {
+            alert(errorMessage);  // Show error message
+        }
+    };
+</script>
+
 </body>
 </html>
 

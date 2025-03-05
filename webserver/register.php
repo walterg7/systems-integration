@@ -1,63 +1,49 @@
 <?php
 session_start();
-require_once __DIR__ . '/../vendor/autoload.php'; // Ensure php-amqplib is installed
 
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+require_once(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
+
+use RabbitMQ\RabbitMQClient;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['email'];
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
+    $email = $_POST['email'] ?? '';
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
 
-    // Basic validation
-    if (empty($email) || empty($username) || empty($password) || empty($confirm_password)) {
-        echo "All fields are required.";
+    if (empty($email) || empty($username) || empty($password)) {
+        echo "<script>alert('Error: All fields are required.'); window.history.back();</script>";
         exit();
     }
+    
+    $hashed_password = hash("sha256", $password);
+    
+    // Encode message as JSON
+    $message = json_encode([
+        'type' => "register",
+        'email' => $email,
+        'username' => $username,
+        'password' => $password,
+    ]);
 
-    if ($password !== $confirm_password) {
-        echo "Passwords do not match.";
-        exit();
-    }
-
-    // Send the data via RabbitMQ (if needed for async processing)
     try {
-        $connection = new AMQPStreamConnection('localhost', 5672, 'broker', '!IT490', 'VM1');
-        $channel = $connection->channel();
+        // Create RabbitMQ client and send request
+        $client = new RabbitMQClient(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
+        $response = $client->sendRequest($message);
+        
+        if ($response === "success") { // Assuming "success" is returned on successful registration
+echo "<script>
+    alert('Registration was successful! You may now sign in!');
+</script>";
+header("Location: dashboard.php");
 
-        // Declare the registration queue
-        $queue_name = 'registration_request';
-        $channel->queue_declare($queue_name, false, true, false, false);
-
-        // Declare the registration exchange
-        $exchange_name = 'registration';
-        $channel->exchange_declare($exchange_name, 'topic', false, true, false);
-
-        // Create message (JSON format)
-        $request_data = json_encode([
-            'email' => $email,
-            'username' => $username,
-            'password' => $password, // Hash password before sending in production
-        ]);
-
-        // Send message to the registration exchange
-        $msg = new AMQPMessage($request_data);
-        $channel->basic_publish($msg, $exchange_name, '*');
-
-        // Send confirmation email
-        sendConfirmationEmail($email, $username);
-
-        // Redirect to a dashboard page
-        header("Location: login.html");
-        exit();
-
+        } else {
+            echo "<script>alert('Registration failed: " . addslashes($response) . "'); window.history.back();</script>";
+        }
     } catch (Exception $e) {
-        echo "Error: " . $e->getMessage();
+        echo "<script>alert('Error: " . addslashes($e->getMessage()) . "'); window.history.back();</script>";
     }
+} else {
+    echo "<script>alert('Invalid request method.'); window.history.back();</script>";
 }
 
 function sendConfirmationEmail($email, $username) {
@@ -75,7 +61,7 @@ function sendConfirmationEmail($email, $username) {
 
         // Recipients
         $mail->setFrom('no-reply@example.com', 'Your Website');
-        $mail->addAddress($email); // Add recipient email
+        $mail->addAddress($email);
 
         // Content
         $mail->isHTML(true);

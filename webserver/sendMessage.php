@@ -2,14 +2,22 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+ob_start();
+
 require_once('/var/www/rabbitmqphp_example/path.inc');
 require_once('/var/www/rabbitmqphp_example/get_host_info.inc');
 require_once('/var/www/rabbitmqphp_example/rabbitMQLib.inc');
 
+// Start the session
+session_start();
+
 $email = isset($_POST['email']) ? $_POST['email'] : "";
 $password = isset($_POST['password']) ? $_POST['password'] : "";
 
-// Prepare request
+// Hash the password before sending it to RabbitMQ
+$hashed_password = hash("sha256", $password);
+
+// Prepare the request
 $request = array(
     'type' => 'login',
     'email' => $email,
@@ -25,18 +33,26 @@ if (!empty($email) && !empty($password)) {
 
     // Debugging: Check what the server responds with
     error_log("Login Response: " . json_encode($response));
+error_log("Received Response: " . json_encode($response));
 
     if ($response['returnCode'] == 0) {
-        // Success: Redirect to dashboard.html
-        header("Location: dashboard.html");
+        // Success: Store user session data
+        $_SESSION['email'] = $email;
+        $_SESSION['session_key'] = session_id();
+        $_SESSION['username'] = $response['username']; // Store retrieved username
+
+        // Redirect to dashboard.php
+        header("Location: dashboard.php");
         exit();
     } else {
-        // Failure: Redirect back to index.html with an error
-        header("Location: index.html?error=" . urlencode($response['message']));
+        // Failure: Terminate session and show error message
+        session_destroy();
+        header("Location: index.html?error=" . urlencode("There was an error, try again"));
         exit();
     }
 } else {
     // Missing email/password, redirect back with an error
+    session_destroy();
     header("Location: index.html?error=" . urlencode("Email and password are required."));
     exit();
 }
