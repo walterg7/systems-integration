@@ -19,7 +19,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     // Encode message as JSON
     $message = json_encode([
-        'type' => "register",
+        'action' => "register",
         'email' => $email,
         'username' => $username,
         'password' => $password,
@@ -28,16 +28,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     try {
         // Create RabbitMQ client and send request
         $client = new RabbitMQClient(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
-        $response = $client->sendRequest($message);
+        $response = json_decode($client->sendRequest($message), true);
         
-        if ($response === "success") { // Assuming "success" is returned on successful registration
-echo "<script>
-    alert('Registration was successful! You may now sign in!');
-</script>";
-header("Location: dashboard.php");
-
+        // Handle duplicate emails and usernames
+        if ($response['status'] === "success") { 
+            header("Location: index.html?success=" . urlencode($response['message']));
+        } elseif($response['status'] === "email_error") {
+            header("Location: index.html?error=" . urlencode($response['message']));
+        } elseif ($response['status'] === "username_error") {
+            header("Location: index.html?error=" . urlencode($response['message']));
         } else {
-            echo "<script>alert('Registration failed: " . addslashes($response) . "'); window.history.back();</script>";
+            header("Location: index.html?error=" . urlencode($response['message']));
         }
     } catch (Exception $e) {
         echo "<script>alert('Error: " . addslashes($e->getMessage()) . "'); window.history.back();</script>";
