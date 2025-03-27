@@ -66,8 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     // Start background process for checking price, using absolute path
-    $check_price_script = '/var/www/test/webserver/crypto-side/check_price.php';
-    $log_file = '/var/www/test/webserver/crypto-side/log.txt';
+    $check_price_script = '/var/www/webserver/crypto-side/check_price.php';
+    $log_file = '/var/www/webserver/crypto-side/log.txt';
 
 
     $cmd = "nohup php $check_price_script $symbol $email > $log_file /dev/null 2>&1 &";
