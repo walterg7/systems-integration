@@ -24,6 +24,7 @@ function send_email($email, $message) {
         $mail->isHTML(true);
         $mail->Subject = 'Crypto Alert';
         $mail->Body    = $message;
+        $mail->send();
 
         if ($mail->send()) {
             echo "Email sent!\n";
@@ -62,14 +63,10 @@ function check_price_change($symbol, $email) {
             $message .= "24h Volume: {$response['volume']}<br>Change (24h): {$response['change_percent']}%<br>";
             $message .= "Last Updated: {$response['last_updated']}";
     
-            echo "Price change detected for $symbol!\n";
-            if (send_email($email, $message)); {
-                echo "Email sent!\n";   
-            }
-
+            send_email($email, $message);
+            echo "Email sent!\n";   
         } else {
             echo "No price change for $symbol.\n"; // Don't send email
-            echo "Email not sent\n";
         }
     } else {
         echo "Failed to retrieve price for $symbol\n";
@@ -83,7 +80,10 @@ if (isset($argv[1]) && isset($argv[2])) {
     $email = $argv[2];
 
     while(true) {
-        check_price_change($symbol, $email);
+        $emailSent = check_price_change($symbol, $email);
+        if ($emailSent) {
+            break;
+        }
         sleep(30);
     }
 } else {
