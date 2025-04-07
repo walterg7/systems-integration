@@ -15,14 +15,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
     
-    $hashed_password = hash("sha256", $password);
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
     // Encode message as JSON
     $message = json_encode([
         'action' => "register",
         'email' => $email,
         'username' => $username,
-        'password' => $password,
+        'password' => $hashed_password,
     ]);
 
     try {

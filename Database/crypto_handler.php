@@ -2,7 +2,7 @@
 require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
 
 // USE ABSOLUTE PATH OR CRON WONT UPDATE DB
-require_once('/home/walter/git/rabbitmqphp_example/Database/databaseConnect.php'); 
+require_once('/home/kris/git/rabbitmqphp_example/Database/databaseConnect.php'); 
 
 use RabbitMQ\RabbitMQClient;
 
@@ -10,7 +10,7 @@ use RabbitMQ\RabbitMQClient;
 
 // logging for cron: this script runs every 5 minutes. check the log file to confirm
 // USE ABSOLUTE PATH OR CRON WONT APPEND TO THE LOG FILE
-$logFile = '/home/walter/git/rabbitmqphp_example/Database/crypto_handler_log.txt';
+$logFile = '/home/kris/git/rabbitmqphp_example/Database/crypto_handler_log.txt';
 
 function logMessage($message) {
     global $logFile;

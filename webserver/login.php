@@ -14,9 +14,6 @@ use RabbitMQ\RabbitMQClient;
 $email = isset($_POST['email']) ? $_POST['email'] : "";
 $password = isset($_POST['password']) ? $_POST['password'] : "";
 
-// Hash the password before sending it to RabbitMQ
-$hashed_password = hash("sha256", $password);
-
 // Prepare the request
 $message = json_encode([
     'action' => 'login',

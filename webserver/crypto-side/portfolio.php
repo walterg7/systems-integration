@@ -3,7 +3,7 @@
 //error_reporting(E_ALL);
 
 // portfolio.php
-include 'config.php';
+//include 'config.php';
 require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
 session_start();
 if (!isset($_SESSION['username'])) {

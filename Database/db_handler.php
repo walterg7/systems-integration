@@ -372,7 +372,7 @@ try {
                     $stmt->fetch();
                     $stmt->close();
                    
-                    if ($password === $dbPassword) {
+                    if (password_verify($password, $dbPassword)) {
                         echo "Login successful for user '$email'.\n";
                         $response = ["status" => "success", "message" => "Login successful!", "username" => $dbUsername];
                     } else {
