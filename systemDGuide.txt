@@ -1,0 +1,31 @@
+[Unit]
+Description=Bundle Installer Service
+After=network.target
+
+[Service]
+User=mike
+WorkingDirectory=/var/www/rabbitmqphp_example/
+ExecStart=/usr/bin/python3 /var/www/rabbitmqphp_example/bundleInstaller.py
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+
+Run to start:
+sudo systemctl start bundle_installer.service
+
+Run to enable start on boot:
+sudo systemctl enable bundle_installer.service
+
+Run to check on status:
+sudo systemctl status bundle_installer.service
+
+Run to reload after modifying:
+sudo systemctl daemon-reload
+sudo systemctl restart bundle_installer.service
+
+Run to view log:
+sudo journalctl -f -u bundle_installer.service
+
