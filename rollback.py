@@ -47,7 +47,8 @@ def main():
         message = {
             'action': 'update_status',
             'bundle_name': bundle_name,
-            'status': status
+            'status': status,
+            'reply_to': 'qa_vm1'
         }
 
         channel.basic_publish(
