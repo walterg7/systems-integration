@@ -61,7 +61,7 @@ class RabbitMQServer {
         $this->channel->basic_consume($this->queue, '', false, true, false, false, function ($msg) use ($callback) {
             echo "\nReceived message!\n";
             $properties = $msg->get_properties();
-            print_r($properties);
+            //print_r($properties);
 
             $response = $callback($msg->body, $properties, $this->channel);
 
@@ -82,6 +82,16 @@ class RabbitMQServer {
         while (count($this->channel->callbacks)) {
             $this->channel->wait();
         }
+    }
+
+    public function publishMessage($message, $routingKeyOverride = null) {
+        if (is_array($message)) {
+            $message = json_encode($message);
+        }
+
+        $msg = new AMQPMessage($message, ['delivery_mode' => 2]); // Persistent message
+        $routingKey = $routingKeyOverride ?? $this->routing_key;
+        $this->channel->basic_publish($msg, $this->exchange, $routingKey);
     }
 
     public function close() {
