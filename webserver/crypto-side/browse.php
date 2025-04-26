@@ -1,6 +1,6 @@
 <?php
 // browse.php
-//include 'config.php';
+include 'config.php';
 session_start();
 if (!isset($_SESSION['username'])) {
     header(__DIR__ . '/../index.html'); // Redirect to login if no session
