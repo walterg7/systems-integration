@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
-
+// Fetches user portfolio
 function fetchPortfolio() {
     fetch("php/portfolio.php")
         .then(response => response.json())

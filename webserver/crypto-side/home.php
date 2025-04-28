@@ -18,28 +18,40 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Website</title>
+<!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <link rel="stylesheet" href="css/makeEverythingPretty.css">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Add Chart.js -->
     <script src="js/app.js" defer></script>
 </head>
 <body>
 
-<div class="navbar">
-    <div class="nav-left">
-        <a href="trade.php">Trade</a>
-        <a href="portfolio.php">Portfolio</a>
-        <a href="notifications.php">Notifications</a>
-        <a href="rss.php">News</a>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Crypto Website</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
+        <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
+        <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+        <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
+      </ul>
+      <span class="navbar-text">
+	<?= htmlspecialchars($username) ?>
+	<a href="../logout.php" class="btn btn-outline-secondary btn-sm">Logout</a>
+      </span>
     </div>
-
-    <div class="nav-right">
-        <span>Welcome, <?= htmlspecialchars($username); ?></span>
-        <a href="../logout.php" class="logout-btn">Logout</a>
-    </div>
-</div>
+  </div>
+</nav>
 
 <div class="container">
-    <h2>Live This is a live bggg test Cryptocurrencies</h2>
+    <h2>Live Market Cryptocurrencies</h2>
     <input type="text" id="search-bar" placeholder="Search for a coin...">
     <label><input type="checkbox" id="filter-market-cap"> High Market Cap</label>
     <label><input type="checkbox" id="filter-positive-change"> Positive 24h Change</label>
@@ -58,12 +70,15 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
     </table>
 </div>
 
-
-<div id="graphModal" style="display: none;">
+	<div id="graphModal" style="display: none;">
     <div class="modal-content">
         <span id="closeModal">&times;</span>
         <h2>Price History of <span id="coin-name"></span></h2>
         <canvas id="coin-graph" width="400" height="200"></canvas>
+	<canvas id="coin-graph" class="w-100" style="max-width: 100%; height: 300px;"></canvas>
+	</div>
+	  </div>
+	   </div>
         <div id="coin-details">
             <!-- Additional coin details will be injected here -->
              <p>Market Cap: <span id="market-cap">Loading...</span></p>

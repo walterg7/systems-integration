@@ -91,23 +91,33 @@ $alerts = $_SESSION['alerts'];
     <title>Notifications</title>
     <link rel="stylesheet" href="css/makeEverythingPretty.css">
     <script src="js/notifications.js" defer></script>
+<!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </head>
 <body>
-<div class="navbar">
-    <div class="nav-left">
-        <a href="home.php">Home</a>
-        <a href="trade.php">Trade</a>
-        <a href="portfolio.php">Portfolio</a>
-        <a href="rss.php">News</a>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">Crypto Website</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+       <li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
+        <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
+	<li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
+      </ul>
+      <span class="navbar-text">
+        <?= htmlspecialchars($username) ?>
+         <a href="../logout.php" class="btn btn-outline-secondary btn-sm">Logout</a>
+      </span>
     </div>
-
-
-    <div class="nav-right">
-        <span>Welcome, <?= htmlspecialchars($username); ?></span>
-        <a href="../logout.php" class="logout-btn">Logout</a>
-    </div>
-</div>
-
+  </div>
+</nav>
 
 <!-- Set a Coin Alert Form -->
 <div class="container">
