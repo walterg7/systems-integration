@@ -8,10 +8,15 @@ $server = new RabbitMQServer(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'DMZ');
 $server->consume(function($body, $properties, $channel) {
     $request = json_decode($body, true);
 
+    $apiKey = getenv('COINCAP_API_KEY');
+    $baseUrl = "https://rest.coincap.io/v3";
+
     switch ($request['action']) {
         case "getTop100Crypto":
-            $apiUrl = "https://api.coincap.io/v2/assets";
-            $response = file_get_contents($apiUrl);
+            echo "Received Top 100 Crypto request:\n";
+            
+            $fullUrl = "$baseUrl/assets/?apiKey=$apiKey";
+            $response = file_get_contents($fullUrl);
             $data = json_decode($response, true);
 
             //Troubleshooting
@@ -25,20 +30,24 @@ $server->consume(function($body, $properties, $channel) {
             return $top100Crypto;
 
         case "getCoinDetails":
-            $coinId = $request['coinId'];                
-            $apiUrl = "https://api.coincap.io/v2/assets/{$coinId}";
+            echo "Received coin details request:\n";
+
+            $slug = $request['coinId'];                
+            $fullUrl = "$baseUrl/assets/{$slug}?apiKey=$apiKey";
         
-            $response = file_get_contents($apiUrl);
+            $response = file_get_contents($fullUrl);
             $data = json_decode($response, true);
-        
+
             return $data;
 
         case "getCoinHistory":
-            $coinId = $request['coinId'];
+            echo "Received coin history request:\n";
+
+            $slug = $request['coinId'];
             $interval = $request['interval'];
-            $apiUrl = "https://api.coincap.io/v2/assets/{$coinId}/history?interval={$interval}";
+            $fullUrl = "$baseUrl/assets/{$slug}/history?interval={$interval}&apiKey=$apiKey";
     
-            $response = file_get_contents($apiUrl);
+            $response = file_get_contents($fullUrl);
             $data = json_decode($response, true);
     
             return $data;
