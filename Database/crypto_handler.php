@@ -21,10 +21,17 @@ try {
     }
 
     // Handle error from DMZ
-    if (!is_array($response) || isset($response['status']) && $response['status'] === 'error') {
-        $msg = "Failed to retrieve data from DMZ.";
-        echo "Failed to retrieve data from DMZ.\n";
-        Logger\sendLog("BACKEND", "ERROR: $msg");
+    if (!is_array($response) || (isset($response['status']) && $response['status'] === 'error')) {
+        $msg = isset($response['message']) ? $response['message'] : 'Unknown error';
+
+        // msg from RabbitMQLib.inc
+        if ($msg === 'No response from server.') {
+            echo "FATAL: No response from DMZ.\n";
+            Logger\sendLog("BACKEND", "FATAL: No response from DMZ.");
+        } else {
+            echo "ERROR: Failed to retrieve data from DMZ.\n";
+            Logger\sendLog("BACKEND", "ERROR: Failed to retrieve data from DMZ.");
+        }
         exit;
     }
 

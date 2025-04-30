@@ -190,7 +190,6 @@ class RabbitMQClient {
         $response = null;
         $this->channel->basic_consume($callback_queue, '', false, true, false, false,
             function ($msg) use (&$response, $correlation_id) {
-                //echo "Received response with correlation ID: " . $msg->get('correlation_id') . "\n";
                 if ($msg->get('correlation_id') == $correlation_id) {
                     $response = $msg->body;
                 }
@@ -207,22 +206,23 @@ class RabbitMQClient {
 
         $this->channel->basic_publish($msg, $this->exchange, $this->routing_key);
 
-        //echo "Message sent with correlation ID: " . $correlation_id . "\n";
-        //echo "Waiting for response...\n";
-
-        // Timeout 
+        // Timeout actually works now
         $startTime = time();
         while (!$response) {
-            $this->channel->wait();
+            try {
+                $this->channel->wait(null, false, 1); // wait for up to 1 second each loop
+            } catch (\PhpAmqpLib\Exception\AMQPTimeoutException $e) {
+                // ignore this
+            }
 
-            if(time() - $startTime > 5) {
+            if (time() - $startTime > 10) { // timeout set to 10 seconds
                 echo "Timeout waiting for response\n";
                 return json_encode(["status" => "error", "message" => "No response from server."]);
             }
         }
 
         return $response;
-    }
+}
 
     public function close() {
         $this->channel->close();
