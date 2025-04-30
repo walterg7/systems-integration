@@ -1,16 +1,18 @@
 #!/usr/bin/php
 <?php
+require_once(__DIR__ . '/../Logger/Logger.inc');
 
-$db = new mysqli("localhost", "tester_user", "testMe", "IT490");
+mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ALL);
 
-if ($db->errno != 0)
-{
-        echo "Failed to connect to database: ". $db->error . PHP_EOL;
-        exit(0);
+try {
+        $db = new mysqli("localhost", "tester_user", "testMe", "IT490");
+        echo "Successfully connected to database" . PHP_EOL;
+        return $db;
+} catch (mysqli_sql_exception) {
+        $errorMsg = "Failed to connect to database.";
+        echo $errorMsg . PHP_EOL;
+        Logger\sendLog("BACKEND", "FATAL: $errorMsg"); 
+        exit(1);
 }
-
-echo "Successfully connected to database" . PHP_EOL;
-
-return $db;
 ?>
 

@@ -1,9 +1,9 @@
 <?php
-require_once __DIR__ . '/../RabbitMQ/RabbitMQLib.inc';
+require_once 'RabbitMQLib.inc';
 
 use RabbitMQ\RabbitMQClient;
 
-$client = new RabbitMQClient("RabbitMQ.ini", "Database");
+$client = new RabbitMQClient("RabbitMQ.ini", "Logger");
 
 $message = [
     "username" => "walter",
