@@ -41,8 +41,9 @@ if (!empty($email) && !empty($password)) {
         $_SESSION['session_key'] = session_id();
         $_SESSION['username'] = $response['username']; // Store retrieved username
 
-        // Redirect to home.php
-	 header("Location: crypto-side/home.php");
+	// Redirect to home.php
+	 header("Location: verify.php");
+	// header("Location: crypto-side/home.php");
 //	header("Location: ../crypto-side/portfolio.php");
         exit();
     } else {

@@ -32,7 +32,8 @@ try {
                 case "register":
                     $email = $data['email'];
                     $username = $data['username'];
-                    $password = $data['password'];
+		    $password = $data['password'];
+		    $phonenum = $data['phonenum'];
            
                     // Check if email or username already exists
                     $stmt = $db->prepare("SELECT email, username FROM users WHERE email = ? OR username = ?");
@@ -53,8 +54,8 @@ try {
                         }
                     } else {
                         // Insert data into database
-                        $stmt = $db->prepare("INSERT INTO users (email, username, password) VALUES (?, ?, ?)");
-                        $stmt->bind_param("sss", $email, $username, $password);
+                        $stmt = $db->prepare("INSERT INTO users (email, username, password, phonenum) VALUES (?, ?, ?, ?)");
+                        $stmt->bind_param("ssss", $email, $username, $password, $phonenum);
 
 
                         if ($stmt->execute()) {
@@ -66,6 +67,31 @@ try {
                         }
                         $stmt->close();
                     } break;
+
+
+
+		case "get_phonenum":
+    $username = $data['username'];
+
+    // Prepare and execute the query to get the phone number
+    $stmt = $db->prepare("SELECT phonenum FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($user) {
+        $phonenum = $user['phonenum'];
+        echo "Phone number for '$username' is '$phonenum'.\n";
+        $response = ["status" => "success", "phonenum" => $phonenum];
+    } else {
+        echo "Error: Username '$username' not found.\n";
+        $response = ["status" => "error", "message" => "Username not found."];
+    }
+    break;
+
 
 
                 // Get user portfolio

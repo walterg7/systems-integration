@@ -9,20 +9,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = $_POST['email'] ?? '';
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
+    $phonenum = $_POST['phonenum'] ?? '';
 
-    if (empty($email) || empty($username) || empty($password)) {
+    if (empty($email) || empty($username) || empty($password) || empty($phonenum)) {
         echo "<script>alert('Error: All fields are required.'); window.history.back();</script>";
         exit();
     }
     
-    $hashed_password = hash("sha256", $password);
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     
     // Encode message as JSON
     $message = json_encode([
         'action' => "register",
         'email' => $email,
         'username' => $username,
-        'password' => $password,
+	'password' => $hashed_password,
+	'phonenum' => $phonenum,
     ]);
 
     try {

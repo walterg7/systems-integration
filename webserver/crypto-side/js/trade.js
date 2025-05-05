@@ -1,4 +1,4 @@
-let userBalance = 0; // Global variable to store user balance
+//let userBalance = 0; // Global variable to store user balance
 document.addEventListener("DOMContentLoaded", function () {
     const coinInput = document.getElementById("coin");
     const amountInput = document.getElementById("amount");
