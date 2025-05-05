@@ -1,59 +1,83 @@
 <?php
 require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
+require_once(__DIR__ . '/../Logger/Logger.inc');
 
 use RabbitMQ\RabbitMQServer;
 
-$server = new RabbitMQServer(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'DMZ');
+// better way to make API calls
+function apiCall($url, $apiKey) {
+    $opts = [
+        "http" => [
+            "method" => "GET",
+            "header" => "Authorization: Bearer $apiKey\r\n"
+        ]
+    ];
+    $context = stream_context_create($opts);
 
-$server->consume(function($body, $properties, $channel) {
-    $request = json_decode($body, true);
+    $response = @file_get_contents($url, false, $context);
 
-    $apiKey = getenv('COINCAP_API_KEY');
-    $baseUrl = "https://rest.coincap.io/v3";
-
-    switch ($request['action']) {
-        case "getTop100Crypto":
-            echo "Received Top 100 Crypto request:\n";
-            
-            $fullUrl = "$baseUrl/assets/?apiKey=$apiKey";
-            $response = file_get_contents($fullUrl);
-            $data = json_decode($response, true);
-
-            //Troubleshooting
-            if ($data === null) {
-                echo "Failed to parse API response.\n";
-            } else {
-                //echo "API response: " . print_r($data, true) . "\n";
-            }
-
-            $top100Crypto = array_slice($data['data'], 0, 100);
-            return $top100Crypto;
-
-        case "getCoinDetails":
-            echo "Received coin details request:\n";
-
-            $slug = $request['coinId'];                
-            $fullUrl = "$baseUrl/assets/{$slug}?apiKey=$apiKey";
-        
-            $response = file_get_contents($fullUrl);
-            $data = json_decode($response, true);
-
-            return $data;
-
-        case "getCoinHistory":
-            echo "Received coin history request:\n";
-
-            $slug = $request['coinId'];
-            $interval = $request['interval'];
-            $fullUrl = "$baseUrl/assets/{$slug}/history?interval={$interval}&apiKey=$apiKey";
-    
-            $response = file_get_contents($fullUrl);
-            $data = json_decode($response, true);
-    
-            return $data;
-        
-        default:
-            return ["status" => "error", "message" => "Invalid request type"];
+    if ($response === false) {
+        $warningMessage = "WARNING: HTTP request failed! (Check API key and URL)";
+        echo $warningMessage . "\n";
+        Logger\sendLog("DMZ", $warningMessage);
+        return ["status" => "error", "message" => $warningMessage];
     }
-});
+
+    $data = json_decode($response, true);
+
+    if ($data === null) {
+        $errorMessage = "ERROR: Failed to parse API response.";
+        echo $errorMessage . "\n";
+        Logger\sendLog("DMZ", $errorMessage);
+        return ["status" => "error", "message" => $errorMessage];
+    }
+
+    return $data;
+}
+
+
+try {
+    $server = new RabbitMQServer(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'DMZ');
+
+    $server->consume(function($body, $properties, $channel) {
+        $request = json_decode($body, true);
+
+        $apiKey = getenv('1COINCAP_API_KEY');
+        $baseUrl = "https://rest.coincap.io/v3"; //make sure to set your API key as an environment variable
+
+        switch ($request['action']) {
+            case "getTop100Crypto":
+                echo "Received Top 100 Crypto request:\n";
+
+                $fullUrl = "$baseUrl/assets";
+                $data = apiCall($fullUrl, $apiKey); 
+        
+                return array_slice($data['data'], 0, 100);
+        
+            case "getCoinDetails":
+                echo "Received coin details request:\n";
+
+                $slug = $request['coinId'];
+                $fullUrl = "$baseUrl/assets/{$slug}";
+
+                return apiCall($fullUrl, $apiKey);
+
+            case "getCoinHistory":
+                echo "Received coin history request:\n";
+                
+                $slug = $request['coinId'];
+                $interval = $request['interval'];
+                $fullUrl = "$baseUrl/assets/{$slug}/history?interval={$interval}";
+                
+                return apiCall($fullUrl, $apiKey);
+
+            default:
+                return ["status" => "error", "message" => "Invalid request type"];
+        }});
+    $server->close();
+} catch (Exception $error) {
+    $msg = "FATAL: " . $error->getMessage();
+    echo "$msg\n";
+    Logger\sendLog("DMZ", $msg);
+}
 ?>

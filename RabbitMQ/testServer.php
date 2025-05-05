@@ -1,9 +1,9 @@
 <?php
-require_once __DIR__ . '/../RabbitMQ/RabbitMQLib.inc';
+require_once 'RabbitMQLib.inc';
 
 use RabbitMQ\RabbitMQServer;
 
-$server = new RabbitMQServer("RabbitMQ.ini", "Database");
+$server = new RabbitMQServer("RabbitMQ.ini", "Logger");
 $server->process_messages();
 $server->close();
 ?>
