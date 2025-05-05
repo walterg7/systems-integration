@@ -1,16 +1,20 @@
 <?php
-/*
+
 require_once __DIR__ . '/vendor/autoload.php';
 require_once(__DIR__ . '/../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
 
 use Twilio\Rest\Client;
 use RabbitMQ\RabbitMQClient;
 
-//Ask mike cause this part needed to be removed in order to push
+// Your Twilio Account SID and Auth Token
+$sid  	= "AC465b81ce44333cbda684b93cd0e9695c";
+$token	= "f13f1616c212e579bd6aa0d2c7f1689c";
+$verifyServiceSid = "VA4e4e07159da1c6d135dc958d81cc56a2";
+
 session_start();
 
 if (!isset($_SESSION['username'])) {
-	header('Location: index.html'); 
+	header('Location: index.html'); // Redirect to login if no session
 	exit();
 }
 
@@ -26,10 +30,10 @@ $changingPhoneNumber = isset($_GET['change_phone']);
 if (!$changingPhoneNumber) {
 	$request = json_encode([
     	'action' => 'get_phonenum',
-    	'username' => $username
+    	'username' => $username // Assuming your database logic uses 'username' to find the phone number
 	]);
 	$response = $client->sendRequest($request);
-	$response_decoded = json_decode($response, true);
+	$response_decoded = json_decode($response, true); // Decode the JSON response
 
 	if ($response_decoded && isset($response_decoded['phonenum'])) {
     	$userPhoneNumber = $response_decoded['phonenum'];
@@ -40,7 +44,7 @@ if (!$changingPhoneNumber) {
 
 if (isset($_GET['logout'])) {
 	session_destroy();
-	header('Location: ' . $_SERVER['PHP_SELF']);
+	header('Location: ' . $_SERVER['PHP_SELF']); // Redirect to refresh the page
 	exit();
 }
 
