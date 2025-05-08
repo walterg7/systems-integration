@@ -2,13 +2,17 @@
 // home.php
 //include 'config.php';
 session_start();
-if (!isset($_SESSION['username'])) {
-    header(__DIR__ . '/../index.html'); // Redirect to login if no session
+if (
+    !isset($_SESSION['username']) ||
+    !isset($_SESSION['is_verified']) ||
+    $_SESSION['is_verified'] !== true
+) {
+    header("Location: /index.html");
     exit();
 }
 $username = $_SESSION['username'];
 
-// Get the last two recommended coins from the session
+
 $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommended_coins'] : [];
 ?>
 

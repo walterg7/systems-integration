@@ -36,15 +36,12 @@ if (!empty($email) && !empty($password)) {
     error_log("Received Response: " . json_encode($response));
 
     if ($response['status'] === "success") {
-        // Success: Store user session data
-        $_SESSION['email'] = $email;
-        $_SESSION['session_key'] = session_id();
-        $_SESSION['username'] = $response['username']; // Store retrieved username
+    $_SESSION['email'] = $email;
+    $_SESSION['username'] = $response['username'];
+    $_SESSION['pending_2fa'] = true;
 
-	// Redirect to home.php
-	 header("Location: verify.php");
-	// header("Location: crypto-side/home.php");
-//	header("Location: ../crypto-side/portfolio.php");
+    header("Location: verify.php");
+ 
         exit();
     } else {
         // Failure: Terminate session and show error message

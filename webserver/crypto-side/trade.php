@@ -3,9 +3,14 @@
 //include 'config.php';
 require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
 session_start();
-if (!isset($_SESSION['username'])) {
-    header('Location: ../index.html');
+if (
+    !isset($_SESSION['username']) ||
+    !isset($_SESSION['is_verified']) ||
+    $_SESSION['is_verified'] !== true
+) {
+    header("Location: /index.html");
     exit();
+
 }
 $username = $_SESSION['username'];
 use RabbitMQ\RabbitMQClient;
@@ -25,8 +30,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-
-// Fetch transactions
 $transaction_request = json_encode([
     'action' => 'getTransactions',
     'username' => $username

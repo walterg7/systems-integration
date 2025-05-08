@@ -1,9 +1,14 @@
 <?php
 
 session_start();
-if (!isset($_SESSION['username'])) {
-    header(__DIR__ . '/../index.html'); // Redirect to login if no session
+if (
+    !isset($_SESSION['username']) ||
+    !isset($_SESSION['is_verified']) ||
+    $_SESSION['is_verified'] !== true
+) {
+    header("Location: /index.html");
     exit();
+
 }
 $username = $_SESSION['username'];
 
