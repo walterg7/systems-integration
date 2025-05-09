@@ -36,6 +36,7 @@ $username = $_SESSION['username'];
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
        <li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="compare.php">Compare</a></li>
         <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
         <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
         <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
@@ -53,6 +54,8 @@ $username = $_SESSION['username'];
     <button id="load-more" onclick="loadMoreNews()">Load More</button>
 
     <script src="js/newsJuice.js"></script>
+    <script src="js/egg.js"></script>
+
 </body>
 </html>
 

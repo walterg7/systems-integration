@@ -143,7 +143,8 @@ $riskier_recommendations = array_slice(array_filter($crypto, function ($c) {
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
+		<li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="compare.php">Compare</a></li>
                 <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
                 <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
                 <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
@@ -262,6 +263,7 @@ $riskier_recommendations = array_slice(array_filter($crypto, function ($c) {
         displayRecommendations(safeRecommendations);
     });
 </script>
+<script src="js/egg.js"></script>
 
 </body>
 </html>
