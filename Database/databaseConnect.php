@@ -2,7 +2,7 @@
 <?php
 require_once(__DIR__ . '/../Logger/Logger.inc');
 
-mysqli_report(MYSQLI_REPORT_STRICT | MYSQLI_REPORT_ALL);
+mysqli_report(MYSQLI_REPORT_STRICT);
 
 try {
         $db = new mysqli("localhost", "tester_user", "testMe", "IT490");
@@ -15,4 +15,3 @@ try {
         exit(1);
 }
 ?>
-

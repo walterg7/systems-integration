@@ -42,7 +42,7 @@ try {
     $server->consume(function($body, $properties, $channel) {
         $request = json_decode($body, true);
 
-        $apiKey = getenv('1COINCAP_API_KEY');
+        $apiKey = getenv('COINCAP_API_KEY');
         $baseUrl = "https://rest.coincap.io/v3"; //make sure to set your API key as an environment variable
 
         switch ($request['action']) {
