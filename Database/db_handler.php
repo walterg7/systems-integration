@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../RabbitMQ/RabbitMQLib.inc';
 require_once 'databaseConnect.php';
 
@@ -9,32 +10,30 @@ try {
     global $db;
     echo "Trying to connect to RabbitMQ...\n";
 
-
     // Initialize RabbitMQServer (using "Database" from RabbitMQ.ini)
     $rbMQs = new RabbitMQServer(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'Database');
 
-
     $rbMQs->consume(function ($message) use ($db) {
         echo "Message: $message\n";
-   
+
         // Decode JSON message
         $data = json_decode($message, true);
         $response = ["status" => "error", "message" => "Unknown error"];
-       
+
         if (!isset($data['action'])) {
             echo "Error: Action not specified.\n";
             $response["message"] = "Action not specified.";
         } else {
             $action = $data['action'];
-       
+
             switch ($action) {
                 // Registration handling
                 case "register":
                     $email = $data['email'];
                     $username = $data['username'];
-		    $password = $data['password'];
-		    $phonenum = $data['phonenum'];
-           
+                    $password = $data['password'];
+                    $phonenum = $data['phonenum'];
+
                     // Check if email or username already exists
                     $stmt = $db->prepare("SELECT email, username FROM users WHERE email = ? OR username = ?");
                     $stmt->bind_param("ss", $email, $username);
@@ -42,7 +41,6 @@ try {
                     $result = $stmt->get_result();
                     $existingUser = $result->fetch_assoc();
                     $stmt->close();
-
 
                     if ($existingUser) {
                         if ($existingUser['email'] === $email) {
@@ -57,7 +55,6 @@ try {
                         $stmt = $db->prepare("INSERT INTO users (email, username, password, phonenum) VALUES (?, ?, ?, ?)");
                         $stmt->bind_param("ssss", $email, $username, $password, $phonenum);
 
-
                         if ($stmt->execute()) {
                             echo "User '$username' successfully registered and added to database.\n";
                             $response = ["status" => "success", "message" => "Registration successful! Please log in."];
@@ -66,40 +63,112 @@ try {
                             $response = ["status" => "error", "message" => "Sorry, we were unable to register you at this time."];
                         }
                         $stmt->close();
-                    } break;
+                    }
+                    break;
 
+                case "get_phonenum":
+                    $username = $data['username'];
 
+                    // Prepare and execute the query to get the phone number
+                    $stmt = $db->prepare("SELECT phonenum FROM users WHERE username = ?");
+                    $stmt->bind_param("s", $username);
+                    $stmt->execute();
 
-		case "get_phonenum":
-    $username = $data['username'];
+                    $result = $stmt->get_result();
+                    $user = $result->fetch_assoc();
+                    $stmt->close();
 
-    // Prepare and execute the query to get the phone number
-    $stmt = $db->prepare("SELECT phonenum FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
+                    if ($user) {
+                        $phonenum = $user['phonenum'];
+                        echo "Phone number for '$username' is '$phonenum'.\n";
+                        $response = ["status" => "success", "phonenum" => $phonenum];
+                    } else {
+                        echo "Error: Username '$username' not found.\n";
+                        $response = ["status" => "error", "message" => "Username not found."];
+                    }
+                    break;
 
-    $result = $stmt->get_result();
-    $user = $result->fetch_assoc();
-    $stmt->close();
+                case "create_topic":
+                    $username = $data['username']; // Use username from the request
+                    $title = $data['title'];
+                    $content = $data['content'];
 
-    if ($user) {
-        $phonenum = $user['phonenum'];
-        echo "Phone number for '$username' is '$phonenum'.\n";
-        $response = ["status" => "success", "phonenum" => $phonenum];
-    } else {
-        echo "Error: Username '$username' not found.\n";
-        $response = ["status" => "error", "message" => "Username not found."];
-    }
-    break;
+                    $stmt = $db->prepare("INSERT INTO forum_posts (username, title, content) VALUES (?, ?, ?)");
+                    $stmt->bind_param("sss", $username, $title, $content);
 
+                    if ($stmt->execute()) {
+                        $response = ["status" => "success", "message" => "Topic created successfully!"];
+                    } else {
+                        $response = ["status" => "error", "message" => "Failed to create topic: " . $stmt->error];
+                    }
+                    $stmt->close();
+                    break;
 
+                case "post_reply":
+                    $username = $data['username'];
+                    $parent_id = $data['parent_id'];
+                    $content = $data['content'];
+
+                    error_log("Received reply data: username=" . $username . ", parent_id=" . $parent_id . ", content=" . $content);
+
+                    $stmt = $db->prepare("INSERT INTO forum_posts (username, parent_id, content) VALUES (?, ?, ?)");
+                    $stmt->bind_param("sis", $username, $parent_id, $content);
+
+                    if ($stmt->execute()) {
+                        $response = ["status" => "success", "message" => "Reply posted successfully!"];
+                        error_log("Reply inserted successfully.");
+                    } else {
+                        $response = ["status" => "error", "message" => "Failed to post reply: " . $stmt->error];
+                        error_log("Error inserting reply: " . $stmt->error);
+                    }
+                    $stmt->close();
+                    break;
+
+                case "get_topics":
+                    $stmt = $db->prepare("SELECT fp.post_id, fp.title, fp.username, fp.created_at FROM forum_posts fp WHERE fp.parent_id IS NULL ORDER BY fp.created_at DESC");
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    $topics = [];
+                    while ($row = $result->fetch_assoc()) {
+                        $topics[] = $row;
+                    }
+                    $stmt->close();
+                    $response = ["status" => "success", "topics" => $topics];
+                    break;
+
+                case "get_topic_and_replies":
+                    $topic_id = $data['topic_id'];
+
+                    // Fetch the main topic
+                    $stmt = $db->prepare("SELECT fp.post_id, fp.title, fp.content, fp.username, fp.created_at FROM forum_posts fp WHERE fp.post_id = ? AND fp.parent_id IS NULL");
+                    $stmt->bind_param("i", $topic_id);
+                    $stmt->execute();
+                    $topic_result = $stmt->get_result();
+                    $topic = $topic_result->fetch_assoc();
+                    $stmt->close();
+
+                    if ($topic) {
+                        // Fetch the replies to the topic
+                        $stmt = $db->prepare("SELECT fp.post_id, fp.content, fp.username, fp.created_at FROM forum_posts fp WHERE fp.parent_id = ? ORDER BY fp.created_at ASC");
+                        $stmt->bind_param("i", $topic_id);
+                        $stmt->execute();
+                        $replies_result = $stmt->get_result();
+                        $replies = [];
+                        while ($row = $replies_result->fetch_assoc()) {
+                            $replies[] = $row;
+                        }
+                        $stmt->close();
+                        $response = ["status" => "success", "topic" => $topic, "replies" => $replies];
+                    } else {
+                        $response = ["status" => "error", "message" => "Topic not found."];
+                    }
+                    break;
 
                 // Get user portfolio
                 case "get_portfolio":
                     $username = $data['username'];
 
-
-                    // Get user_id from users table
+                    // Get user_id and balance from users table
                     $stmt = $db->prepare("SELECT id, balance FROM users WHERE username = ?");
                     $stmt->bind_param("s", $username);
                     $stmt->execute();
@@ -107,13 +176,11 @@ try {
                     $stmt->fetch();
                     $stmt->close();
 
-
                     if (!$user_id) {
                         echo "Error: No user found for username '$username'\n";
                         $response = ["status" => "error", "message" => "User not found"];
                     } else {
                         echo "DEBUG: Retrieved user_id = $user_id for username = $username\n"; // Log user_id
-
 
                         // Fetch portfolio using user_id
                         $stmt = $db->prepare("SELECT coin_name, coin_symbol, quantity, average_price FROM portfolio WHERE user_id = ?");
@@ -122,55 +189,38 @@ try {
                         $result = $stmt->get_result();
                         $portfolio = [];
 
-
                         while ($row = $result->fetch_assoc()) {
                             $portfolio[] = $row;
                         }
                         $stmt->close();
 
-
                         echo "DEBUG: Retrieved portfolio: " . json_encode($portfolio) . "\n"; // Log portfolio data
 
-
                         $response = ["status" => "success", "portfolio" => $portfolio, "balance" => (float)$balance];
-                    } break;
-
+                    }
+                    break;
 
                 // Get user balance
                 case "get_balance":
                     $username = $data['username'];
 
-
-                    // Get user_id from users table
-                    $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
+                    // Get user_id and balance from users table
+                    $stmt = $db->prepare("SELECT id, balance FROM users WHERE username = ?");
                     $stmt->bind_param("s", $username);
                     $stmt->execute();
-                    $stmt->bind_result($id);
+                    $stmt->bind_result($id, $balance);
                     $stmt->fetch();
                     $stmt->close();
-
 
                     if (!$id) {
                         echo "Error: No user found for username '$username'\n";
                         $response = ["status" => "error", "message" => "User not found"];
                     } else {
-                        echo "DEBUG: Retrieved user_id = $user_id for username = $username\n"; // Log user_id
-
-
-                        // Fetch balance from portfolio using user_id
-                        $stmt = $db->prepare("SELECT balance FROM users WHERE id = ?");
-                        $stmt->bind_param("i", $id);
-                        $stmt->execute();
-                        $stmt->bind_result($balance);
-                        $stmt->fetch();
-                        $stmt->close();
-
-
+                        echo "DEBUG: Retrieved user_id = $id for username = $username\n"; // Log user_id
                         echo "DEBUG: Retrieved balance = $balance\n"; // Log balance
-
-
                         $response = ["status" => "success", "balance" => $balance];
-                    } break;
+                    }
+                    break;
 
                 // Add funds
                 case "add_funds":
@@ -183,17 +233,15 @@ try {
                     $stmt->fetch();
                     $stmt->close();
 
-
                     if (!$id) {
                         echo "Error: No user found for username '$username'\n";
                         $response = ["status" => "error", "message" => "User not found"];
                     } else {
-                        echo "DEBUG: Retrieved user_id = $user_id for username = $username\n"; // Log user_id
-
+                        echo "DEBUG: Retrieved user_id = $id for username = $username\n"; // Log user_id
 
                         $stmt = $db->prepare("UPDATE users SET balance = balance + ? WHERE id = ?");
                         $stmt->bind_param("di", $amount, $id);
-                       
+
                         if ($stmt->execute()) {
                             // Fetch the updated balance after adding funds
                             $stmt = $db->prepare("SELECT balance FROM users WHERE id = ?");
@@ -203,7 +251,6 @@ try {
                             $stmt->fetch();
                             $stmt->close();
 
-
                             $response = [
                                 "status" => "success",
                                 "message" => "Funds added successfully!",
@@ -212,13 +259,12 @@ try {
                         } else {
                             $response = ["status" => "error", "message" => "Failed to add funds."];
                         }
-                    } break;
-
+                    }
+                    break;
 
                 // Get transactions
                 case "getTransactions":
                     $username = $data['username'];
-
 
                     // Get user_id from users table
                     $stmt = $db->prepare("SELECT id FROM users WHERE username = ?");
@@ -228,13 +274,11 @@ try {
                     $stmt->fetch();
                     $stmt->close();
 
-
                     if (!$user_id) {
                         echo "Error: No user found for username '$username'\n";
                         $response = ["status" => "error", "message" => "User not found"];
                     } else {
                         echo "DEBUG: Retrieved user_id = $user_id for username = $username\n"; // Log user_id
-
 
                         // Fetch transactions for the user from the transactions table
                         $stmt = $db->prepare("SELECT coin_symbol, coin_name, amount, price, action, timestamp FROM transactions WHERE user_id = ? ORDER BY timestamp DESC");
@@ -243,12 +287,10 @@ try {
                         $result = $stmt->get_result();
                         $transactions = [];
 
-
                         while ($row = $result->fetch_assoc()) {
                             $transactions[] = $row;
                         }
                         $stmt->close();
-
 
                         if (empty($transactions)) {
                             // If no transactions
@@ -259,27 +301,26 @@ try {
                             echo "DEBUG: Retrieved transactions: " . json_encode($transactions) . "\n";
                             $response = ["status" => "success", "transactions" => $transactions];
                         }
-                    } break;
-
+                    }
+                    break;
 
                 // Buy
-               
                 case "buy":
                     $username = $data['username'];
                     $coinSymbol = $data['coin_symbol'];
                     $coinName = $data['coin_name'];
                     $amount = $data['amount'];
                     $coinPrice = $data['price'];
-           
+
                     $stmt = $db->prepare("SELECT id, balance FROM users WHERE username = ?");
                     $stmt->bind_param("s", $username);
                     $stmt->execute();
                     $stmt->bind_result($user_id, $balance);
                     $stmt->fetch();
                     $stmt->close();
-           
+
                     $totalPurchaseAmount = $amount * $coinPrice;
-           
+
                     if ($balance < $totalPurchaseAmount) {
                         $response = ["status" => "error", "message" => "Insufficient balance."];
                     } else {
@@ -289,20 +330,21 @@ try {
                         $stmt->bind_param("di", $newBalance, $user_id);
                         $stmt->execute();
                         $stmt->close();
-           
+
                         // Check if the user already has this coin in their portfolio
-                        $stmt = $db->prepare("SELECT quantity FROM portfolio WHERE user_id = ? AND coin_symbol = ?");
+                        $stmt = $db->prepare("SELECT quantity, average_price FROM portfolio WHERE user_id = ? AND coin_symbol = ?");
                         $stmt->bind_param("is", $user_id, $coinSymbol);
                         $stmt->execute();
-                        $stmt->bind_result($currentQuantity);
+                        $stmt->bind_result($currentQuantity, $avgPrice);
                         $stmt->fetch();
                         $stmt->close();
-           
+
                         if ($currentQuantity > 0) {
                             // Update existing portfolio entry
                             $newQuantity = $currentQuantity + $amount;
+                            $newAvgPrice = (($currentQuantity * $avgPrice) + ($amount * $coinPrice)) / $newQuantity;
                             $stmt = $db->prepare("UPDATE portfolio SET quantity = ?, average_price = ? WHERE user_id = ? AND coin_symbol = ?");
-                            $stmt->bind_param("ddis", $newQuantity, $coinPrice, $user_id, $coinSymbol);
+                            $stmt->bind_param("ddis", $newQuantity, $newAvgPrice, $user_id, $coinSymbol);
                         } else {
                             // Insert new portfolio entry
                             $stmt = $db->prepare("INSERT INTO portfolio (user_id, coin_symbol, coin_name, quantity, average_price) VALUES (?, ?, ?, ?, ?)");
@@ -310,17 +352,16 @@ try {
                         }
                         $stmt->execute();
                         $stmt->close();
-           
+
                         // Log transaction
                         $stmt = $db->prepare("INSERT INTO transactions (user_id, coin_symbol, coin_name, amount, price, action) VALUES (?, ?, ?, ?, ?, 'buy')");
                         $stmt->bind_param("issdd", $user_id, $coinSymbol, $coinName, $amount, $coinPrice);
                         $stmt->execute();
                         $stmt->close();
-           
+
                         $response = ["status" => "success", "message" => "Purchase successful."];
                     }
                     break;
-
 
                 // Sell
                 case "sell":
@@ -329,193 +370,195 @@ try {
                     $coinName = $data['coin_name'];
                     $amount = $data['amount'];
                     $coinPrice = $data['price'];
-                    $totalSellAmount = $data['profit'];
-           
+                    $totalSellAmount = $amount * $coinPrice;
+
                     // Get user_id and balance
                     $stmt = $db->prepare("SELECT id, balance FROM users WHERE username = ?");
                     $stmt->bind_param("s", $username);
                     $stmt->execute();
                     $stmt->bind_result($user_id, $currentBalance);
-                    $stmt->fetch();
-                    $stmt->close();
-           
-                    // Get user's coin holdings
-                    $stmt = $db->prepare("SELECT quantity FROM portfolio WHERE user_id = ? AND coin_symbol = ?");
-                    $stmt->bind_param("is", $user_id, $coinSymbol);
-                    $stmt->execute();
-                    $stmt->bind_result($currentQuantity);
-                    $stmt->fetch();
-                    $stmt->close();
-           
-                    if ($currentQuantity < $amount) {
-                        $response = ["status" => "error", "message" => "Insufficient coin quantity."];
-                    } else {
-                        // Deduct coins and potentially remove the coin from portfolio
-                        $newQuantity = $currentQuantity - $amount;
-                        if ($newQuantity <= 0) {
-                            $stmt = $db->prepare("DELETE FROM portfolio WHERE user_id = ? AND coin_symbol = ?");
-                        } else {
-                            $stmt = $db->prepare("UPDATE portfolio SET quantity = ? WHERE user_id = ? AND coin_symbol = ?");
-                        }
-           
-                        if ($newQuantity <= 0){
-                            $stmt->bind_param("is", $user_id, $coinSymbol);
-                        } else {
-                            $stmt->bind_param("dis", $newQuantity, $user_id, $coinSymbol);
-                        }
-           
-                        $stmt->execute();
-                        $stmt->close();
-           
-                        // Update balance
-                        $newBalance = $currentBalance + $totalSellAmount;
-                        $stmt = $db->prepare("UPDATE users SET balance = ? WHERE id = ?");
-                        $stmt->bind_param("di", $newBalance, $user_id);
-                        $stmt->execute();
-                        $stmt->close();
-           
-                        // Log transaction
-                        $stmt = $db->prepare("INSERT INTO transactions (user_id, coin_symbol, coin_name, amount, price, action, timestamp) VALUES (?, ?, ?, ?, ?, 'sell', NOW())");
-                        $stmt->bind_param("issdd", $user_id, $coinSymbol, $coinName, $amount, $coinPrice);
-                        $stmt->execute();
-                        $stmt->close();
-           
-                        $response = ["status" => "success", "message" => "Sale successful."];
-                    }
-                    break;
+
+                	$stmt->fetch();
+                	$stmt->close();
+      	 
+                	// Get user's coin holdings
+                	$stmt = $db->prepare("SELECT quantity FROM portfolio WHERE user_id = ? AND coin_symbol = ?");
+                	$stmt->bind_param("is", $user_id, $coinSymbol);
+                	$stmt->execute();
+                	$stmt->bind_result($currentQuantity);
+                	$stmt->fetch();
+                	$stmt->close();
+      	 
+                	if ($currentQuantity < $amount) {
+                    	$response = ["status" => "error", "message" => "Insufficient coin quantity."];
+                	} else {
+                    	// Deduct coins and potentially remove the coin from portfolio
+                    	$newQuantity = $currentQuantity - $amount;
+                    	if ($newQuantity <= 0) {
+                        	$stmt = $db->prepare("DELETE FROM portfolio WHERE user_id = ? AND coin_symbol = ?");
+                    	} else {
+                        	$stmt = $db->prepare("UPDATE portfolio SET quantity = ? WHERE user_id = ? AND coin_symbol = ?");
+                    	}
+      	 
+                    	if ($newQuantity <= 0){
+                        	$stmt->bind_param("is", $user_id, $coinSymbol);
+                    	} else {
+                        	$stmt->bind_param("dis", $newQuantity, $user_id, $coinSymbol);
+                    	}
+      	 
+                    	$stmt->execute();
+                    	$stmt->close();
+      	 
+                    	// Update balance
+                    	$newBalance = $currentBalance + $totalSellAmount;
+                    	$stmt = $db->prepare("UPDATE users SET balance = ? WHERE id = ?");
+                    	$stmt->bind_param("di", $newBalance, $user_id);
+                    	$stmt->execute();
+                    	$stmt->close();
+      	 
+                    	// Log transaction
+                    	$stmt = $db->prepare("INSERT INTO transactions (user_id, coin_symbol, coin_name, amount, price, action, timestamp) VALUES (?, ?, ?, ?, ?, 'sell', NOW())");
+                    	$stmt->bind_param("issdd", $user_id, $coinSymbol, $coinName, $amount, $coinPrice);
+                    	$stmt->execute();
+                    	$stmt->close();
+      	 
+                    	$response = ["status" => "success", "message" => "Sale successful."];
+                	}
+                	break;
 
 
-                // Login handling
-                case "login":
-                    $email = $data['email'];
-                    $password = $data['password'];
-           
-                    // Verify user credentials
-                    $stmt = $db->prepare("SELECT username, password FROM users WHERE email = ?");
-                    $stmt->bind_param("s", $email);
-                    $stmt->execute();
-                    $stmt->bind_result($dbUsername, $dbPassword);
-                    $stmt->fetch();
-                    $stmt->close();
-                   
-                    if (password_verify($password, $dbPassword)) {
-                        echo "Login successful for user '$email'.\n";
-                        $response = ["status" => "success", "message" => "Login successful!", "username" => $dbUsername];
-                    } else {
-                        echo "Error: Incorrect password for user '$email'.\n";
-                        $response = ["status" => "error", "message" => "Invalid email or password."];
-                    } break;
+            	// Login handling
+            	case "login":
+                	$email = $data['email'];
+                	$password = $data['password'];
+      	 
+                	// Verify user credentials
+                	$stmt = $db->prepare("SELECT username, password FROM users WHERE email = ?");
+                	$stmt->bind_param("s", $email);
+                	$stmt->execute();
+                	$stmt->bind_result($dbUsername, $dbPassword);
+                	$stmt->fetch();
+                	$stmt->close();
+              	 
+                	if (password_verify($password, $dbPassword)) {
+                    	echo "Login successful for user '$email'.\n";
+                    	$response = ["status" => "success", "message" => "Login successful!", "username" => $dbUsername];
+                	} else {
+                    	echo "Error: Incorrect password for user '$email'.\n";
+                    	$response = ["status" => "error", "message" => "Invalid email or password."];
+                	} break;
 
 
-                // Get top 100 Crypto
-                case "getTop100Crypto":
-                    $query = "SELECT asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent, crypto_rank FROM (
-                            SELECT asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent,
-                            RANK() OVER (ORDER BY market_cap DESC) AS crypto_rank
-                            FROM crypto
-                            ) ranked_crypto
-                            LIMIT 100";            
-       
-                    $result = $db->query($query);
+            	// Get top 100 Crypto
+            	case "getTop100Crypto":
+                	$query = "SELECT asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent, crypto_rank FROM (
+                        	SELECT asset_id, name, symbol, price, market_cap, supply, max_supply, volume, change_percent,
+                        	RANK() OVER (ORDER BY market_cap DESC) AS crypto_rank
+                        	FROM crypto
+                        	) ranked_crypto
+                        	LIMIT 100";       	 
+  	 
+                	$result = $db->query($query);
 
 
-                    if ($result && $result->num_rows > 0) {
-                        $cryptos = [];
-                        while ($row = $result->fetch_assoc()) {
-                            $cryptos[] = [
-                                'id' => $row['asset_id'],
-                                'name' => $row['name'],
-                                'symbol' => $row['symbol'],
-                                'priceUsd' => $row['price'],
-                                'marketCapUsd' => $row['market_cap'],
-                                'supply' => $row['supply'],
-                                'maxSupply' => $row['max_supply'],
-                                'volumeUsd24Hr' => $row['volume'],
-                                'changePercent24Hr' => $row['change_percent'],
-                                'rank' => $row['crypto_rank'],
-                            ];
-                        }
-                        $response = ["status" => "success", "data" => $cryptos];
-                    } else {
-                        $response = ["status" => "error", "message" => "Failed to fetch top 100 cryptocurrencies from the database."];
-                    } break;
+                	if ($result && $result->num_rows > 0) {
+                    	$cryptos = [];
+                    	while ($row = $result->fetch_assoc()) {
+                        	$cryptos[] = [
+                            	'id' => $row['asset_id'],
+                            	'name' => $row['name'],
+                            	'symbol' => $row['symbol'],
+                            	'priceUsd' => $row['price'],
+                            	'marketCapUsd' => $row['market_cap'],
+                            	'supply' => $row['supply'],
+                            	'maxSupply' => $row['max_supply'],
+                            	'volumeUsd24Hr' => $row['volume'],
+                            	'changePercent24Hr' => $row['change_percent'],
+                            	'rank' => $row['crypto_rank'],
+                        	];
+                    	}
+                    	$response = ["status" => "success", "data" => $cryptos];
+                	} else {
+                    	$response = ["status" => "error", "message" => "Failed to fetch top 100 cryptocurrencies from the database."];
+                	} break;
 
-                // Email notifications everytime coin price changes (dependent on cron, so every 5 minutes in this case)
-                case "get_coin_price":
-                    $symbol = $data['symbol'];
-                
-                    // Fetch current price from the crypto table
-                    $stmt = $db->prepare("SELECT price, market_cap, supply, max_supply, volume, change_percent, last_updated FROM crypto WHERE symbol = ?");
-                    $stmt->bind_param("s", $symbol);
-                    $stmt->execute();
-                    $stmt->bind_result($price, $market_cap, $supply, $max_supply, $volume, $change_percent, $last_updated);
-                    $stmt->fetch();
-                    $stmt->close();
-                
-                    if (!$price) {
-                        $response = ["status" => "error", "message" => "Coin symbol '$symbol' not found"];
-                        break;
-                    }
+            	// Email notifications everytime coin price changes (dependent on cron, so every 5 minutes in this case)
+            	case "get_coin_price":
+                	$symbol = $data['symbol'];
+           	 
+                	// Fetch current price from the crypto table
+                	$stmt = $db->prepare("SELECT price, market_cap, supply, max_supply, volume, change_percent, last_updated FROM crypto WHERE symbol = ?");
+                	$stmt->bind_param("s", $symbol);
+                	$stmt->execute();
+                	$stmt->bind_result($price, $market_cap, $supply, $max_supply, $volume, $change_percent, $last_updated);
+                	$stmt->fetch();
+                	$stmt->close();
+           	 
+                	if (!$price) {
+                    	$response = ["status" => "error", "message" => "Coin symbol '$symbol' not found"];
+                    	break;
+                	}
 
-                    // Fetch last recorded price
-                    $stmt = $db->prepare("SELECT last_price FROM price_alerts WHERE coin_symbol = ?");
-                    $stmt->bind_param("s", $symbol);
-                    $stmt->execute();
-                    $stmt->bind_result($old_price);
-                    $stmt->fetch();
-                    $stmt->close();
+                	// Fetch last recorded price
+                	$stmt = $db->prepare("SELECT last_price FROM price_alerts WHERE coin_symbol = ?");
+                	$stmt->bind_param("s", $symbol);
+                	$stmt->execute();
+                	$stmt->bind_result($old_price);
+                	$stmt->fetch();
+                	$stmt->close();
 
-                    $price_changed = false;
+                	$price_changed = false;
 
-                    // Add the coin to price_alerts if it is not there
-                    if ($old_price === null) {
-                        $stmt = $db->prepare("INSERT INTO price_alerts (coin_symbol, last_price) VALUES (?, ?)");
-                        $stmt-> bind_param("sd", $symbol, $price);
-                        $stmt-> execute();
-                        $stmt->close();
-                        $old_price = $price;
-                    }
-                
-                    // Check if price has changed
-                    if ($old_price != $price) {
-                        $price_changed = true;
+                	// Add the coin to price_alerts if it is not there
+                	if ($old_price === null) {
+                    	$stmt = $db->prepare("INSERT INTO price_alerts (coin_symbol, last_price) VALUES (?, ?)");
+                    	$stmt-> bind_param("sd", $symbol, $price);
+                    	$stmt-> execute();
+                    	$stmt->close();
+                    	$old_price = $price;
+                	}
+           	 
+                	// Check if price has changed
+                	if ($old_price != $price) {
+                    	$price_changed = true;
 
-                        // Update price_alerts with new price
-                        $stmt = $db->prepare("INSERT INTO price_alerts (coin_symbol, last_price) 
-                                              VALUES (?, ?) ON DUPLICATE KEY UPDATE last_price = ?");
-                        $stmt->bind_param("sdd", $symbol, $price, $price);
-                        $stmt->execute();
-                        $stmt->close();
-                    } else {
-                        echo "No price change detected for $symbol.\n";
-                    }
-                
-                    // Return response to RabbitMQ
-                    $response = [
-                        "status" => "success",
-                        "old_price" => $old_price,
-                        "price" => $price,
-                        "market_cap" => $market_cap,
-                        "supply" => $supply,
-                        "max_supply" => $max_supply,
-                        "volume" => $volume,
-                        "change_percent" => $change_percent,
-                        "last_updated" => $last_updated,
-                        "price_changed" => $price_changed
-                    ]; break;
-               
-                default:
-                    echo "Error: Unknown action '$action'.\n";
-                }        
-            }
-        return $response;
-    });    
-    // Close RabbitMQ connection when done
-    $rbMQs->close();
+                    	// Update price_alerts with new price
+                    	$stmt = $db->prepare("INSERT INTO price_alerts (coin_symbol, last_price)
+                                          	VALUES (?, ?) ON DUPLICATE KEY UPDATE last_price = ?");
+                    	$stmt->bind_param("sdd", $symbol, $price, $price);
+                    	$stmt->execute();
+                    	$stmt->close();
+                	} else {
+                    	echo "No price change detected for $symbol.\n";
+                	}
+           	 
+                	// Return response to RabbitMQ
+                	$response = [
+                    	"status" => "success",
+                    	"old_price" => $old_price,
+                    	"price" => $price,
+                    	"market_cap" => $market_cap,
+                    	"supply" => $supply,
+                    	"max_supply" => $max_supply,
+                    	"volume" => $volume,
+                    	"change_percent" => $change_percent,
+                    	"last_updated" => $last_updated,
+                    	"price_changed" => $price_changed
+                	]; break;
+          	 
+            	default:
+                	echo "Error: Unknown action '$action'.\n";
+            	}   	 
+        	}
+    	return $response;
+	});    
+	// Close RabbitMQ connection when done
+	$rbMQs->close();
 } catch (Exception $error) {
-    echo "Error: " . $error->getMessage() . "\n\n";
+	echo "Error: " . $error->getMessage() . "\n\n";
 }
 ?>
+
 
 
 

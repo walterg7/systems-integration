@@ -44,7 +44,8 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
         <li class="nav-item"><a class="nav-link" href="compare.php">Compare</a></li>
         <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
         <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
-        <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+	<li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+        <li class="nav-item"><a class="nav-link" href="forum.php">Forum</a></li>
         <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
       </ul>
       <span class="navbar-text">
