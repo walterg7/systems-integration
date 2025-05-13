@@ -1,17 +1,11 @@
 <?php
 // notifications.php
 session_start();
-if (
-    !isset($_SESSION['username']) ||
-    !isset($_SESSION['is_verified']) ||
-    $_SESSION['is_verified'] !== true
-) {
-    header("Location: /index.html");
+if (!isset($_SESSION['username'])) {
+    header('Location: ../index.html');
     exit();
-
 }
 $username = $_SESSION['username'];
-
 
 require_once(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQLib.inc');
 use PHPMailer\PHPMailer\PHPMailer;
@@ -19,8 +13,7 @@ use PHPMailer\PHPMailer\Exception;
 use RabbitMQ\RabbitMQClient;
 require '/var/www/rabbitmqphp_example/vendor/autoload.php';
 
-
-// PHPMailer
+// Function to send email via PHPMailer
 function send_email($email, $message) {
     $mail = new PHPMailer(true);
     try {
@@ -44,11 +37,42 @@ function send_email($email, $message) {
     }
 }
 
+// Function to send immediate SMS confirmation
+function send_immediate_sms_confirmation($phoneNumber) {
+    $textbeltEndpoint = 'https://textbelt.com/text';
+    $textbeltKey = 'ceebcfc81aa421fa088ecda7a8b6278dfb0eec38kke1V4X1XqDqTswtVX3NtpeuP';
 
+    $message = "Your crypto alert has been set. You will receive price updates shortly.";
+
+    $ch = curl_init($textbeltEndpoint);
+    $data = array(
+        'phone' => $phoneNumber,
+        'message' => $message,
+        'key' => $textbeltKey,
+    );
+
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $responseData = json_decode($response, true);
+    if ($responseData && $responseData['success']) {
+        error_log("Immediate SMS confirmation sent to $phoneNumber");
+        return true;
+    } else {
+        error_log("Failed to send immediate SMS confirmation to $phoneNumber: " . json_encode($responseData));
+        return false;
+    }
+}
+
+// Handle alert form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $symbol = $_POST['symbol'];
     $email = $_POST['email'];
-    $notificationPreference = $_POST['notification_preference'] ?? 'email';
+    $notificationPreference = $_POST['notification_preference'] ?? 'email'; // Default to email
     $phoneNumber = $_POST['phone_number'] ?? null;
 
     $_SESSION['alerts'][] = [
@@ -60,28 +84,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'phone_number' => $phoneNumber
     ];
 
+    // Send confirmation based on preference
     if ($notificationPreference === 'email') {
         send_email($email, "Alert set for $symbol! You will be notified of price changes via email.");
     } elseif ($notificationPreference === 'sms' && $phoneNumber) {
         $message = "Alert set for $symbol! You will be notified of price changes via SMS at $phoneNumber.";
         echo '<div class="alert alert-success mt-3">' . htmlspecialchars($message) . '</div>';
+        
+        send_immediate_sms_confirmation($phoneNumber);
     }
 
-
-    // Troubleshooting
-    // Extract symbol from $symbol
+    
     if (preg_match('/\((.*?)\)/', $symbol, $matches)) {
         $symbol = trim($matches[1]);
     }
 
-
+    // Start background process for checking price, using absolute path
     $check_price_script = '/var/www/webserver/crypto-side/check_price.php';
     $log_file = '/var/www/webserver/crypto-side/log.txt';
 
-
+    
     $cmd = "nohup php $check_price_script $symbol $email \"$notificationPreference\" \"$phoneNumber\" > $log_file /dev/null 2>&1 &";
     exec($cmd, $output, $return_var);
-
 
     file_put_contents($log_file, "Executed: $cmd\nReturn: $return_var\nOutput: " . implode("\n", $output) . "\n", FILE_APPEND);
 }
@@ -89,7 +113,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $alerts = $_SESSION['alerts'];
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -106,7 +129,7 @@ $alerts = $_SESSION['alerts'];
         border: 1px solid #ccc;
         background-color: #f9f9f9;
         position: absolute;
-        width: 90%;
+        width: 90%; /* Adjust as needed */
         z-index: 1000;
     }
     .suggestion-item {
@@ -121,25 +144,26 @@ $alerts = $_SESSION['alerts'];
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Crypto Website</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
-	<li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
-        <li class="nav-item"><a class="nav-link" href="compare.php">Compare</a></li>
-        <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
-        <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
-    <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
-      </ul>
-      <span class="navbar-text">
-        <?= htmlspecialchars($username) ?>
-        <a href="../logout.php" class="btn btn-outline-secondary btn-sm">Logout</a>
-      </span>
+    <div class="container-fluid">
+        <a class="navbar-brand" href="#">Crypto Website</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+		<li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="compare.php">Compare</a></li>
+                <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
+		<li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
+                <li class="nav-item"><a class="nav-link" href="forum.php">Forum</a></li>
+        <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
+            </ul>
+            <span class="navbar-text">
+                <?= htmlspecialchars($username) ?>
+                <a href="../logout.php" class="btn btn-outline-secondary btn-sm">Logout</a>
+            </span>
+        </div>
     </div>
-  </div>
 </nav>
 
 <div class="container">
@@ -218,7 +242,6 @@ $alerts = $_SESSION['alerts'];
         });
     });
 </script>
-<script src="js/egg.js"></script>
 
 </body>
 </html>

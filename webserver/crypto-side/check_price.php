@@ -11,7 +11,7 @@ echo "Starting script\n";
 $textbeltEndpoint = 'https://textbelt.com/text';
 $textbeltKey = 'textbelt'; // Using the free key as per their example
 
-// Function to send email via PHPMailer (no changes needed)
+// Function to send email via PHPMailer
 function send_email($email, $message) {
     $mail = new PHPMailer(true);
     echo "Sending email to $email...\n";
@@ -43,7 +43,7 @@ function send_email($email, $message) {
     }
 }
 
-// Function to send SMS via Textbelt
+
 function send_sms($phoneNumber, $message) {
     global $textbeltEndpoint, $textbeltKey;
 
@@ -53,7 +53,7 @@ function send_sms($phoneNumber, $message) {
     $data = array(
         'phone' => $phoneNumber,
         'message' => $message,
-        'key' => $textbeltKey,
+        'key' => 'ceebcfc81aa421fa088ecda7a8b6278dfb0eec38kke1V4X1XqDqTswtVX3NtpeuP',
     );
 
     curl_setopt($ch, CURLOPT_POST, 1);
@@ -84,7 +84,7 @@ function send_sms($phoneNumber, $message) {
     }
 }
 
-// Function to monitor price change
+
 function check_price_change($symbol, $email, $notificationPreference, $phoneNumber = null) {
     echo "Checking price for $symbol...\n";
     $client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
@@ -92,7 +92,7 @@ function check_price_change($symbol, $email, $notificationPreference, $phoneNumb
     $request = ['action' => 'get_coin_price', 'symbol' => $symbol, 'email' => $email];
     $response = json_decode($client->sendRequest($request), true);
 
-    // troubleshooting
+   
     if (!$response) {
         echo "Failed to decode response\n";
         return;
@@ -127,7 +127,7 @@ function check_price_change($symbol, $email, $notificationPreference, $phoneNumb
     }
 }
 
-// Ensure script runs only when executed from CLI with arguments
+
 if (isset($argv[1]) && isset($argv[2]) && isset($argv[3]) && isset($argv[4])) {
     $symbol = $argv[1];
     $email = $argv[2];

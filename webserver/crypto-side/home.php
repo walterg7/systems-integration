@@ -86,7 +86,7 @@ $recommended_coins = isset($_SESSION['recommended_coins']) ? $_SESSION['recommen
 	  </div>
 	   </div>
         <div id="coin-details">
-            <!-- Additional coin details will be injected here -->
+            
              <p>Market Cap: <span id="market-cap">Loading...</span></p>
    	     <p>24h Trading Volume: <span id="trading-volume">Loading...</span></p>
    	     <p>Circulating Supply: <span id="circulating-supply">Loading...</span></p>

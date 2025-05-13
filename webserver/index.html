@@ -31,17 +31,17 @@
     </div>
     <script>
     window.onload = function() {
-        // Check if there's a success or error message in the URL
+       
         const urlParams = new URLSearchParams(window.location.search);
         const successMessage = urlParams.get('success');
         const errorMessage = urlParams.get('error');
 
         if (successMessage) {
-            alert(successMessage);  // Show success message
+            alert(successMessage);  
         }
 
         if (errorMessage) {
-            alert(errorMessage);  // Show error message
+            alert(errorMessage); 
         }
     };
 </script>

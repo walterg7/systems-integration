@@ -8,7 +8,7 @@ use RabbitMQ\RabbitMQClient;
 
 
 $sid   = "AC465b81ce44333cbda684b93cd0e9695c";
-$token = "8ea0edf3c0e611694b8ecae34d6d399c";
+$token = "26a3b610f72fc0d94b35d6f642f579fb";
 $verifyServiceSid = "VA4e4e07159da1c6d135dc958d81cc56a2";
 
 session_start();
@@ -26,7 +26,7 @@ $verificationSent = false;
 $userPhoneNumber = null;
 $changingPhoneNumber = isset($_GET['change_phone']);
 
-// Development bypass
+
 if (isset($_POST['skip_2fa'])) {
     $_SESSION['is_verified'] = true;
     header('Location: crypto-side/home.php');
@@ -286,11 +286,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
             <p class="verification-sent-message">A verification code has been sent to <?php echo $_SESSION['phone_number_to_verify'] ?? $userPhoneNumber ?? 'your phone number'; ?>.</p>
         <?php endif; ?>
-
-        <form method="post">
-            <input type="hidden" name="skip_2fa" value="true">
-            <button type="submit" class="skip-button">Skip 2FA (Development Only)</button>
-        </form>
 
         <a href="?logout=true" class="logout-link">Logout and Clear Session</a>
     </div>

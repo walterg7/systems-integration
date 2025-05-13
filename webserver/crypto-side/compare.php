@@ -16,7 +16,7 @@ use RabbitMQ\RabbitMQClient;
 
 $client = new RabbitMQClient(__DIR__ . '/../../rabbitmqphp_example/RabbitMQ/RabbitMQ.ini', 'Database');
 
-// Fetch top 100 crypto data from DB
+
 $crypto_request = json_encode([
     'action' => 'getTop100Crypto',
 ]);
@@ -88,8 +88,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
-                <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+		<li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
+                <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
+		<li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+                <li class="nav-item"><a class="nav-link" href="forum.php">Forum</a></li>
                 <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
             </ul>
             <span class="navbar-text">

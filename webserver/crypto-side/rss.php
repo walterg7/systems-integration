@@ -39,7 +39,9 @@ $username = $_SESSION['username'];
         <li class="nav-item"><a class="nav-link" href="compare.php">Compare</a></li>
         <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
         <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
-        <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+	<li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
+        <li class="nav-item"><a class="nav-link" href="forum.php">Forum</a></li>
+
        
       </ul>
       <span class="navbar-text">

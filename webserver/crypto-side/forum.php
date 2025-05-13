@@ -72,10 +72,10 @@ $showCreateForm = isset($_POST['show_create_form']);
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="home.php">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
+		<li class="nav-item"><a class="nav-link" href="trade.php">Trade</a></li>
+                <li class="nav-item"><a class="nav-link" href="portfolio.php">Portfolio</a></li>
                 <li class="nav-item"><a class="nav-link" href="notifications.php">Notifications</a></li>
                 <li class="nav-item"><a class="nav-link" href="rss.php">News</a></li>
-                <li class="nav-item"><a class="nav-link" href="forum.php">Forum</a></li>
             </ul>
             <span class="navbar-text">
                 <?= htmlspecialchars($username) ?>
