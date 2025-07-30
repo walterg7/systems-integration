@@ -3,6 +3,19 @@ require_once(__DIR__ . '/../RabbitMQ/RabbitMQLib.inc');
 require_once(__DIR__ . '/../Logger/Logger.inc');
 
 use RabbitMQ\RabbitMQServer;
+use Dotenv\Dotenv;
+
+$dotenvPath = '/home/db/systems-integration'; 
+$dotenv = Dotenv::createImmutable($dotenvPath);
+$dotenv->safeLoad();
+
+$apiKey = getenv('COINCAP_API_KEY');
+
+if (!$apiKey) {
+    echo "FATAL: COINCAP_API_KEY is missing.\n";
+    Logger\sendLog("DMZ", "FATAL: COINCAP_API_KEY is missing.");
+    exit(1);
+}
 
 // better way to make API calls
 function apiCall($url, $apiKey) {
@@ -35,14 +48,12 @@ function apiCall($url, $apiKey) {
     return $data;
 }
 
-
 try {
     $server = new RabbitMQServer(__DIR__ . '/../RabbitMQ/RabbitMQ.ini', 'DMZ');
 
-    $server->consume(function($body, $properties, $channel) {
+    $server->consume(function($body, $properties, $channel) use ($apiKey) { // import $apiKey into the function’s local scope
         $request = json_decode($body, true);
 
-        $apiKey = getenv('COINCAP_API_KEY');
         $baseUrl = "https://rest.coincap.io/v3"; //make sure to set your API key as an environment variable
 
         switch ($request['action']) {
