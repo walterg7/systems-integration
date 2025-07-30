@@ -3,7 +3,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    balance decimal(18,2) DEFAULT 10000.00;
+    balance decimal(18,2) DEFAULT 10000.00,
     PRIMARY KEY (id)
 );
 
@@ -17,7 +17,6 @@ CREATE TABLE `crypto` (
   `max_supply` decimal(30,8) DEFAULT NULL,
   `volume` decimal(30,8) DEFAULT NULL,
   `change_percent` decimal(10,4) DEFAULT NULL,
-  `data` json NOT NULL,
   `last_updated` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`asset_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
