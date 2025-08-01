@@ -3,6 +3,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
+    phonenum varchar(255) default 1,
     balance decimal(18,2) DEFAULT 10000.00,
     PRIMARY KEY (id)
 );
@@ -39,7 +40,7 @@ CREATE TABLE transactions (
     coin_name VARCHAR(50) NOT NULL,
     amount DECIMAL(18,8) NOT NULL,
     price DECIMAL(18,8) NOT NULL,
-    type ENUM('buy','sell') NOT NULL,
+    action ENUM('buy','sell') NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
