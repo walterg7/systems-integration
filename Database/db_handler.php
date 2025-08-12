@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../RabbitMQ/RabbitMQLib.inc';
-require_once 'databaseConnect.php';
+require_once 'dbConnect.php';
 
 use RabbitMQ\RabbitMQServer;
 use PhpAmqpLib\Message\AMQPMessage;
